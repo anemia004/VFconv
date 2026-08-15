@@ -49,6 +49,5 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    // FFmpegKit fork (maintained, Maven Central)
-    implementation 'io.github.tanersener:ffmpeg-kit-full:6.0-2'
+    // No FFmpeg dependency for now
 }

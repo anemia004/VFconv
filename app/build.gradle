@@ -61,5 +61,6 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    // No FFmpeg dependency for now (placeholder conversion)
+    // FFmpeg library (real conversion)
+    implementation 'com.github.hiteshsondhi88.libffmpeg:FFmpegAndroid:0.2.5'
 }

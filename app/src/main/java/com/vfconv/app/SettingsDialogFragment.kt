@@ -1,5 +1,7 @@
 package com.vfconv.app
 
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -30,5 +32,14 @@ class SettingsDialogFragment : DialogFragment() {
         view.findViewById<View>(R.id.btn_choose_folder).setOnClickListener {
             Toast.makeText(context, "Folder picker would open", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.9).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     }
 }

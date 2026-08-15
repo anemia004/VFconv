@@ -1,2 +1,1 @@
--keep class com.arthenica.** { *; }
--keep class com.github.mmin18.** { *; }
+-keep class io.github.tanersener.** { *; }

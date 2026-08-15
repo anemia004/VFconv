@@ -1,1 +1,1 @@
--keep class io.github.tanersener.** { *; }
+# Add project specific ProGuard rules here.

@@ -1,26 +1,36 @@
 # VFconv
 
-VFconv is an Android app for converting video formats using FFmpeg, featuring a modern liquid glass UI with an animated gradient background.
+VFconv is a modern Android video converter app with a **liquid glass UI** and an animated gradient background. It uses **Media3 Transformer** (hardware-accelerated) to convert videos between different formats and codecs.
 
 ## Features
-- Select video from device (SAF, no storage permission)
-- Choose output format: MP4, MKV, WebM
-- Select video codec: H.264, H.265, VP9, AV1
-- Adjust resolution and bitrate
-- Progress bar with cancellation
-- Glassmorphism UI with custom dropdowns
+
+- 📁 Select video from device using Storage Access Framework (no storage permission required)
+- 🎞 Convert to MP4, MKV, or WebM
+- 🎥 Choose video codec: H.264, H.265, VP9, AV1
+- 📏 Adjust resolution (Original, 1080p, 720p, 480p, 360p)
+- ⚡ Set bitrate (Default, 1 Mbps, 2 Mbps, 4 Mbps, 8 Mbps)
+- 📊 Real-time progress bar with cancel option
+- 🌌 Liquid glass UI with smooth animations
+- 🔧 Settings dialog: update, clear cache, choose download folder
+
+## Screenshots
+
+> (Add screenshots here if available)
+
+## How It Works
+
+The app uses **AndroidX Media3 Transformer** to transcode videos. Media3 leverages device hardware codecs, making conversion fast and efficient. No external FFmpeg binaries are required.
 
 ## Build
-1. Clone the repository.
-2. Open in Android Studio.
-3. For release builds, set up a keystore and configure GitHub Actions.
-4. Sync Gradle and build.
 
-## Dependencies
-- FFmpegKit (full package)
-- Kotlin Coroutines
-- AndroidX
-- RealtimeBlurView
+### Requirements
 
-## License
-This project uses FFmpeg under LGPL/GPL. Ensure compliance when distributing.
+- Android Studio Hedgehog or newer
+- Android SDK 35
+- JDK 17
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/VFconv.git

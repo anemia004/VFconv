@@ -12,7 +12,7 @@ android {
         minSdk 24
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
     }
 
     buildFeatures {
@@ -22,9 +22,9 @@ android {
     signingConfigs {
         release {
             storeFile file("$rootDir/vfconv-release.jks")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "VFconvSecurePass123"
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "vfconv123"
             keyAlias System.getenv("KEY_ALIAS") ?: "vfconv-key"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "VFconvSecurePass123"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "vfconv123"
         }
     }
 
@@ -43,6 +43,14 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def version = variant.versionName
+            def formattedDate = new Date().format('yyyyMMdd')
+            outputFileName = "VFconv_${version}_${formattedDate}.apk"
+        }
+    }
 }
 
 dependencies {
@@ -53,5 +61,5 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    // No FFmpeg dependency for now
+    // No FFmpeg dependency for now (placeholder conversion)
 }

@@ -2,7 +2,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
+    android:padding="24dp"
     android:background="@drawable/glass_settings_bg">
 
     <TextView
@@ -10,24 +10,25 @@
         android:layout_height="wrap_content"
         android:text="Settings"
         android:textColor="#1C1C1E"
-        android:textSize="18sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="24dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingVertical="8dp">
+        android:paddingVertical="12dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Update FFmpeg"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_update_ffmpeg"
@@ -35,7 +36,9 @@
             android:layout_height="wrap_content"
             android:text="Check"
             android:background="@drawable/glass_button_small"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:minWidth="80dp"
+            android:textSize="14sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -43,14 +46,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingVertical="8dp">
+        android:paddingVertical="12dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Clear Cache"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_clear_cache"
@@ -58,7 +62,9 @@
             android:layout_height="wrap_content"
             android:text="Clear"
             android:background="@drawable/glass_button_small"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:minWidth="80dp"
+            android:textSize="14sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -66,14 +72,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingVertical="8dp">
+        android:paddingVertical="12dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Download Folder"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_choose_folder"
@@ -81,15 +88,18 @@
             android:layout_height="wrap_content"
             android:text="Select"
             android:background="@drawable/glass_button_small"
-            android:textColor="#1C1C1E" />
+            android:textColor="#1C1C1E"
+            android:minWidth="80dp"
+            android:textSize="14sp" />
     </LinearLayout>
 
     <Button
         android:id="@+id/btn_close"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:text="Close"
         android:background="@drawable/glass_button"
-        android:textColor="#1C1C1E" />
+        android:textColor="#1C1C1E"
+        android:textSize="16sp" />
 </LinearLayout>

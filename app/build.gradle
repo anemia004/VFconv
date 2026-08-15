@@ -49,6 +49,6 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
-    implementation 'com.github.mmin18:realtimeblurview:1.2.1'
+    // FFmpegKit fork (maintained, Maven Central)
+    implementation 'io.github.tanersener:ffmpeg-kit-full:6.0-2'
 }

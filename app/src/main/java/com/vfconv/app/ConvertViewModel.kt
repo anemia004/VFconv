@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
@@ -61,19 +63,20 @@ class ConvertViewModel : ViewModel() {
             val editedMediaItem = EditedMediaItem.Builder(mediaItem)
                 .setRemoveAudio(false)
                 .build()
+            val sequence = EditedMediaItemSequence.Builder(editedMediaItem).build()
+            val composition = Composition.Builder(sequence).build()
 
-            // Use start(EditedMediaItem, String) directly to avoid Composition issues
             var completed = false
             var failed = false
             var errorMessage: String? = null
 
             transformer.addListener(object : Transformer.Listener {
-                override fun onCompleted(composition: androidx.media3.transformer.Composition, exportResult: ExportResult) {
+                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                     completed = true
                 }
 
                 override fun onError(
-                    composition: androidx.media3.transformer.Composition,
+                    composition: Composition,
                     exportResult: ExportResult,
                     exportException: ExportException
                 ) {
@@ -82,9 +85,8 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            transformer.start(editedMediaItem, outputUri.toString())
+            transformer.start(composition, outputUri.toString())
 
-            // Wait for completion or failure (simplified blocking loop)
             while (!completed && !failed) {
                 Thread.sleep(100)
                 val progress = transformer.getProgress()

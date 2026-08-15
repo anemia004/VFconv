@@ -1,7 +1,7 @@
 package com.vfconv.app
 
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,7 +24,9 @@ class SettingsDialogFragment : DialogFragment() {
 
         view.findViewById<View>(R.id.btn_close).setOnClickListener { dismiss() }
         view.findViewById<View>(R.id.btn_update_ffmpeg).setOnClickListener {
-            Toast.makeText(context, "Checking for FFmpeg updates...", Toast.LENGTH_SHORT).show()
+            // Open GitHub releases page
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/yourusername/VFconv/releases"))
+            startActivity(intent)
         }
         view.findViewById<View>(R.id.btn_clear_cache).setOnClickListener {
             Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
@@ -40,6 +42,6 @@ class SettingsDialogFragment : DialogFragment() {
             (resources.displayMetrics.widthPixels * 0.9).toInt(),
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog?.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 }

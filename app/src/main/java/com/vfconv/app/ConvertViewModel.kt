@@ -2,12 +2,13 @@ package com.vfconv.app
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import kotlinx.coroutines.Dispatchers
@@ -61,20 +62,18 @@ class ConvertViewModel : ViewModel() {
                 .setRemoveAudio(false)
                 .build()
 
-            val composition = Composition.Builder(editedMediaItem).build()
-
-            // Set up a listener to track completion and progress
+            // Use start(EditedMediaItem, String) directly to avoid Composition issues
             var completed = false
             var failed = false
             var errorMessage: String? = null
 
             transformer.addListener(object : Transformer.Listener {
-                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                override fun onCompleted(composition: androidx.media3.transformer.Composition, exportResult: ExportResult) {
                     completed = true
                 }
 
                 override fun onError(
-                    composition: Composition,
+                    composition: androidx.media3.transformer.Composition,
                     exportResult: ExportResult,
                     exportException: ExportException
                 ) {
@@ -83,7 +82,7 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            transformer.start(composition, outputUri.toString())
+            transformer.start(editedMediaItem, outputUri.toString())
 
             // Wait for completion or failure (simplified blocking loop)
             while (!completed && !failed) {

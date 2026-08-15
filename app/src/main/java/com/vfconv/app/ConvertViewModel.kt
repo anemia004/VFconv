@@ -8,7 +8,12 @@ import com.github.hiteshsondhi88.libffmpeg.FFmpeg
 import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler
 import com.github.hiteshsondhi88.libffmpeg.FFmpegLoadBinaryResponseHandler
 import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 class ConvertViewModel : ViewModel() {
@@ -39,7 +44,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // not implemented
+        // Not implemented
     }
 
     private suspend fun runFFmpegConversion(
@@ -53,11 +58,11 @@ class ConvertViewModel : ViewModel() {
             val ffmpeg = FFmpeg.getInstance(context)
             loadFFmpegBinary(ffmpeg)
 
-            val cmd = buildFFmpegCommand(inputPath, outputPath, options)
-            Log.d("VFconv", "Executing: ${cmd.joinToString(" ")}")
+            val command = buildFFmpegCommand(inputPath, outputPath, options)
+            Log.d("VFconv", "Executing: $command")
 
             suspendCancellableCoroutine<Result<Unit>> { continuation ->
-                ffmpeg.execute(cmd, object : FFmpegExecuteResponseHandler {
+                ffmpeg.execute(command, object : FFmpegExecuteResponseHandler {
                     override fun onSuccess(message: String?) {
                         continuation.resume(Result.success(Unit))
                     }
@@ -101,7 +106,7 @@ class ConvertViewModel : ViewModel() {
         inputPath: String,
         outputPath: String,
         options: ConvertOptions
-    ): Array<String> {
+    ): String {
         val cmd = mutableListOf<String>()
         cmd.add("-y")
         cmd.add("-i")
@@ -137,7 +142,7 @@ class ConvertViewModel : ViewModel() {
         cmd.add("-f")
         cmd.add(options.outputFormat)
         cmd.add(outputPath)
-        return cmd.toTypedArray()
+        return cmd.joinToString(" ")
     }
 
     private fun parseTime(progress: String?): Double {

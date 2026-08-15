@@ -8,8 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.vfconv.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,20 +15,12 @@ class MainActivity : AppCompatActivity() {
     private val viewModel = ConvertViewModel()
 
     private var inputUri: Uri? = null
-    private var inputCachePath: String? = null
 
     private val pickVideoLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
             inputUri = it
-            val cacheFile = File(cacheDir, "input_${System.currentTimeMillis()}.mp4")
-            contentResolver.openInputStream(it)?.use { input ->
-                FileOutputStream(cacheFile).use { output ->
-                    input.copyTo(output)
-                }
-            }
-            inputCachePath = cacheFile.absolutePath
             binding.tvSelectedFile.text = "Selected: ${it.lastPathSegment}"
             binding.btnConvert.isEnabled = true
         }
@@ -39,8 +29,8 @@ class MainActivity : AppCompatActivity() {
     private val createOutputLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("video/*")
     ) { uri ->
-        uri?.let {
-            startConversion(it)
+        uri?.let { outputUri ->
+            startConversion(outputUri)
         }
     }
 
@@ -65,9 +55,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnPickVideo.setOnClickListener {
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
-
         binding.btnConvert.setOnClickListener {
-            if (inputCachePath == null) {
+            if (inputUri == null) {
                 Toast.makeText(this, "Select a video first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -78,11 +67,7 @@ class MainActivity : AppCompatActivity() {
             }
             createOutputLauncher.launch("converted_video.$extension")
         }
-
-        binding.btnCancel.setOnClickListener {
-            viewModel.cancel()
-        }
-
+        binding.btnCancel.setOnClickListener { viewModel.cancel() }
         binding.btnSettings.setOnClickListener {
             SettingsDialogFragment().show(supportFragmentManager, "settings")
         }
@@ -90,62 +75,44 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         lifecycleScope.launch {
-            viewModel.progress.collect { progress ->
-                binding.progressBar.progress = progress
-                binding.tvProgress.text = "$progress%"
+            viewModel.progress.collect { p ->
+                binding.progressBar.progress = p
+                binding.tvProgress.text = "$p%"
             }
         }
         lifecycleScope.launch {
             viewModel.state.collect { state ->
                 when (state) {
-                    is ConversionState.Idle -> {}
-                    is ConversionState.Running -> {
+                    ConversionState.Running -> {
                         binding.btnConvert.isEnabled = false
                         binding.btnCancel.isEnabled = true
                         binding.progressCard.visibility = android.view.View.VISIBLE
                     }
-                    is ConversionState.Success -> {
+                    ConversionState.Success -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
                         Toast.makeText(this@MainActivity, "Conversion completed!", Toast.LENGTH_LONG).show()
                     }
-                    is ConversionState.Error -> {
+                    ConversionState.Error -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
                         Toast.makeText(this@MainActivity, "Conversion failed: ${state.message}", Toast.LENGTH_LONG).show()
                     }
+                    else -> {}
                 }
             }
         }
     }
 
     private fun startConversion(outputUri: Uri) {
-        val inputPath = inputCachePath ?: return
-        val outputCacheFile = File(cacheDir, "output.${getExtensionFromFormat()}")
-        val outputPath = outputCacheFile.absolutePath
-
+        val inputUri = inputUri ?: return
         val options = ConvertOptions(
             codec = getCodecValue(),
             resolution = getResolutionValue(),
             bitrate = getBitrateValue(),
             outputFormat = getExtensionFromFormat()
         )
-
-        viewModel.startConversion(this@MainActivity, inputPath, outputPath, options)
-
-        // After conversion finishes, copy result to the user-selected location
-        lifecycleScope.launch {
-            viewModel.state.collect { state ->
-                if (state is ConversionState.Success) {
-                    contentResolver.openOutputStream(outputUri)?.use { out ->
-                        outputCacheFile.inputStream().use { it.copyTo(out) }
-                    }
-                    // Delete temporary cache file
-                    outputCacheFile.delete()
-                    return@collect
-                }
-            }
-        }
+        viewModel.startConversion(this, inputUri, outputUri, options)
     }
 
     private fun getExtensionFromFormat(): String {
@@ -158,10 +125,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCodecValue(): String {
         return when (binding.dropdownCodec.getSelected()) {
-            "H.265" -> "libx265"
-            "VP9" -> "libvpx-vp9"
-            "AV1" -> "libaom-av1"
-            else -> "libx264"
+            "H.265" -> "hevc"
+            "VP9" -> "vp9"
+            "AV1" -> "av01"
+            else -> "avc"
         }
     }
 

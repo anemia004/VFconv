@@ -4,14 +4,17 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MovingBackgroundView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    private val paint = Paint()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var time = 0f
+
     private val colors = intArrayOf(
         Color.parseColor("#FF6B6B"),
         Color.parseColor("#4ECDC4"),
@@ -21,7 +24,7 @@ class MovingBackgroundView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        time += 0.02f
+        time += 0.01f
         if (time > 1f) time = 0f
 
         val gradient = LinearGradient(
@@ -31,10 +34,11 @@ class MovingBackgroundView @JvmOverloads constructor(
         paint.shader = gradient
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
-        // Overlay a moving radial gradient for extra depth (optional)
+        val cx = width * 0.5f + sin(time * 2 * Math.PI).toFloat() * width * 0.2f
+        val cy = height * 0.5f + cos(time * 2 * Math.PI).toFloat() * height * 0.2f
         val radial = RadialGradient(
-            width * 0.5f, height * 0.5f, width * 0.7f,
-            Color.argb(80, 255, 255, 255),
+            cx, cy, width * 0.8f,
+            Color.argb(60, 255, 255, 255),
             Color.argb(0, 255, 255, 255),
             Shader.TileMode.CLAMP
         )

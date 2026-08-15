@@ -83,17 +83,17 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.state.collect { state ->
                 when (state) {
-                    ConversionState.Running -> {
+                    is ConversionState.Running -> {
                         binding.btnConvert.isEnabled = false
                         binding.btnCancel.isEnabled = true
                         binding.progressCard.visibility = android.view.View.VISIBLE
                     }
-                    ConversionState.Success -> {
+                    is ConversionState.Success -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
                         Toast.makeText(this@MainActivity, "Conversion completed!", Toast.LENGTH_LONG).show()
                     }
-                    ConversionState.Error -> {
+                    is ConversionState.Error -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
                         Toast.makeText(this@MainActivity, "Conversion failed: ${state.message}", Toast.LENGTH_LONG).show()

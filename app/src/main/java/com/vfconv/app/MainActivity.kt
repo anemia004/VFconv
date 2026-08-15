@@ -1,6 +1,5 @@
 package com.vfconv.app
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -132,15 +131,17 @@ class MainActivity : AppCompatActivity() {
             outputFormat = getExtensionFromFormat()
         )
 
-        viewModel.startConversion(inputPath, outputPath, options)
+        viewModel.startConversion(this@MainActivity, inputPath, outputPath, options)
 
-        // Copy after success (simplified: observe state)
+        // After conversion finishes, copy result to the user-selected location
         lifecycleScope.launch {
             viewModel.state.collect { state ->
                 if (state is ConversionState.Success) {
                     contentResolver.openOutputStream(outputUri)?.use { out ->
                         outputCacheFile.inputStream().use { it.copyTo(out) }
                     }
+                    // Delete temporary cache file
+                    outputCacheFile.delete()
                     return@collect
                 }
             }

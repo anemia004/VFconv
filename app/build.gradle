@@ -61,8 +61,10 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    // Media3 Transformer (real conversion)
     implementation 'androidx.media3:media3-transformer:1.4.1'
     implementation 'androidx.media3:media3-effect:1.4.1'
     implementation 'androidx.media3:media3-common:1.4.1'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+    // Add preference library for SharedPreferences
+    implementation 'androidx.preference:preference:1.2.1'
 }

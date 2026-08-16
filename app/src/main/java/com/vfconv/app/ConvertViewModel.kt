@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,13 +28,11 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache (FFmpeg needs a file path)
+            // Copy input to cache
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
-                    inputFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+                    inputFile.outputStream().use { output -> input.copyTo(output) }
                 } ?: run {
                     _state.value = ConversionState.Error("Cannot open input stream")
                     return@launch
@@ -74,26 +73,61 @@ class ConvertViewModel : ViewModel() {
         FFmpegKit.cancel()
     }
 
-    private fun runFFmpeg(inputPath: String, outputPath: String, options: ConvertOptions): Result<Unit> {
-        val command = buildFFmpegCommand(inputPath, outputPath, options)
-        Log.d("VFconv", "Executing: $command")
+    private suspend fun runFFmpeg(
+        inputPath: String,
+        outputPath: String,
+        options: ConvertOptions
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        val commandArray = buildFFmpegCommand(inputPath, outputPath, options)
+        Log.d("VFconv", "Executing: ${commandArray.joinToString(" ")}")
 
-        val session = FFmpegKit.execute(command)
-        return if (ReturnCode.isSuccess(session.returnCode)) {
+        val session = FFmpegKit.executeWithArguments(commandArray)
+        if (ReturnCode.isSuccess(session.returnCode)) {
             Result.success(Unit)
         } else {
-            Result.failure(Exception(session.allLogsAsString))
+            // Capture full logs for debugging
+            val logs = session.allLogsAsString
+            Log.e("VFconv", "FFmpeg failed: $logs")
+            Result.failure(Exception(logs))
         }
     }
 
-    private fun buildFFmpegCommand(inputPath: String, outputPath: String, options: ConvertOptions): String {
-        return "-y -i \"$inputPath\" -c:v ${options.codec} -preset ${options.preset} -crf ${options.crf} " +
-            (if (options.resolution != null) "-vf scale=${options.resolution} " else "") +
-            (if (options.bitrate != null) "-b:v ${options.bitrate} " else "") +
-            when (options.outputFormat) {
-                "webm" -> "-c:a libopus -b:a 128k "
-                else -> "-c:a aac -b:a 128k "
-            } +
-            "-f ${options.outputFormat} \"$outputPath\""
+    private fun buildFFmpegCommand(inputPath: String, outputPath: String, options: ConvertOptions): Array<String> {
+        val args = mutableListOf<String>()
+        args.add("-y")
+        args.add("-i")
+        args.add(inputPath)
+        args.add("-c:v")
+        args.add(options.codec)
+        args.add("-preset")
+        args.add(options.preset)
+        args.add("-crf")
+        args.add(options.crf.toString())
+        if (options.resolution != null) {
+            args.add("-vf")
+            args.add("scale=${options.resolution}")
+        }
+        if (options.bitrate != null) {
+            args.add("-b:v")
+            args.add(options.bitrate)
+        }
+        when (options.outputFormat) {
+            "webm" -> {
+                args.add("-c:a")
+                args.add("libopus")
+                args.add("-b:a")
+                args.add("128k")
+            }
+            else -> {
+                args.add("-c:a")
+                args.add("aac")
+                args.add("-b:a")
+                args.add("128k")
+            }
+        }
+        args.add("-f")
+        args.add(options.outputFormat)
+        args.add(outputPath)
+        return args.toTypedArray()
     }
 }

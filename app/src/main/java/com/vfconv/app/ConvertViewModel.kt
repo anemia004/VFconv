@@ -46,7 +46,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Transformer cancellation not implemented here
+        // Cancellation not implemented in this minimal version
     }
 
     private fun runMedia3Conversion(

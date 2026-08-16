@@ -26,32 +26,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Update FFmpeg"
-            android:textColor="#1C1C1E"
-            android:textSize="16sp" />
-
-        <Button
-            android:id="@+id/btn_update_ffmpeg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Check"
-            android:background="@drawable/glass_button_small"
-            android:textColor="#1C1C1E"
-            android:minWidth="80dp"
-            android:textSize="14sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingVertical="12dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="Clear Cache"
             android:textColor="#1C1C1E"
             android:textSize="16sp" />
@@ -78,7 +52,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Download Folder"
+            android:text="Output Folder"
             android:textColor="#1C1C1E"
             android:textSize="16sp" />
 
@@ -87,6 +61,32 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Select"
+            android:background="@drawable/glass_button_small"
+            android:textColor="#1C1C1E"
+            android:minWidth="80dp"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingVertical="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="About"
+            android:textColor="#1C1C1E"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_about"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Info"
             android:background="@drawable/glass_button_small"
             android:textColor="#1C1C1E"
             android:minWidth="80dp"

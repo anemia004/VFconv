@@ -156,10 +156,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCodecValue(): String {
         return when (binding.dropdownCodec.getSelected()) {
-            "H.265" -> "hevc"
-            "VP9" -> "vp9"
-            "AV1" -> "av01"
-            else -> "avc"
+            "H.265" -> "libx265"
+            "VP9" -> "libvpx-vp9"
+            "AV1" -> "libaom-av1"
+            else -> "libx264"
         }
     }
 

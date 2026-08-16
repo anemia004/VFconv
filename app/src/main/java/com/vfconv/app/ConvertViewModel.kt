@@ -5,10 +5,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.hiteshsondhi88.libffmpeg.FFmpeg
-import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler
-import com.github.hiteshsondhi88.libffmpeg.FFmpegLoadBinaryResponseHandler
-import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,28 +29,39 @@ class ConvertViewModel : ViewModel() {
 
             // Copy input to cache (FFmpeg needs a file path)
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
-            context.contentResolver.openInputStream(inputUri)?.use { input ->
-                inputFile.outputStream().use { output ->
-                    input.copyTo(output)
+            try {
+                context.contentResolver.openInputStream(inputUri)?.use { input ->
+                    inputFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                } ?: run {
+                    _state.value = ConversionState.Error("Cannot open input stream")
+                    return@launch
                 }
+            } catch (e: Exception) {
+                _state.value = ConversionState.Error(e.message)
+                return@launch
             }
 
             val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.${options.outputFormat}")
 
             val result = withContext(Dispatchers.IO) {
-                runFFmpegConversion(context, inputFile.absolutePath, outputFile.absolutePath, options) { p ->
-                    _progress.value = p
-                }
+                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath, options)
             }
 
             if (result.isSuccess) {
-                // Copy output to user-selected location
-                context.contentResolver.openOutputStream(outputUri)?.use { out ->
-                    outputFile.inputStream().use { it.copyTo(out) }
+                try {
+                    context.contentResolver.openOutputStream(outputUri)?.use { out ->
+                        outputFile.inputStream().use { it.copyTo(out) }
+                    } ?: throw Exception("Cannot open output stream")
+                    outputFile.delete()
+                    inputFile.delete()
+                    _state.value = ConversionState.Success
+                } catch (e: Exception) {
+                    outputFile.delete()
+                    inputFile.delete()
+                    _state.value = ConversionState.Error(e.message)
                 }
-                outputFile.delete()
-                inputFile.delete()
-                _state.value = ConversionState.Success
             } else {
                 outputFile.delete()
                 inputFile.delete()
@@ -62,126 +71,29 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Not implemented
+        FFmpegKit.cancel()
     }
 
-    private fun runFFmpegConversion(
-        context: Context,
-        inputPath: String,
-        outputPath: String,
-        options: ConvertOptions,
-        onProgress: (Int) -> Unit
-    ): Result<Unit> {
-        return try {
-            val ffmpeg = FFmpeg.getInstance(context)
-            loadFFmpegBinary(ffmpeg)
+    private fun runFFmpeg(inputPath: String, outputPath: String, options: ConvertOptions): Result<Unit> {
+        val command = buildFFmpegCommand(inputPath, outputPath, options)
+        Log.d("VFconv", "Executing: $command")
 
-            val command = buildFFmpegCommand(inputPath, outputPath, options)
-            Log.d("VFconv", "Executing: $command")
-
-            var completed = false
-            var failed = false
-            var errorMessage: String? = null
-
-            ffmpeg.execute(command, object : FFmpegExecuteResponseHandler {
-                override fun onSuccess(message: String?) {
-                    completed = true
-                }
-
-                override fun onProgress(progress: String?) {
-                    val timeInSeconds = parseTime(progress)
-                    if (timeInSeconds > 0) {
-                        val percent = (timeInSeconds / 60) * 100
-                        onProgress(percent.toInt().coerceIn(0, 100))
-                    }
-                }
-
-                override fun onFailure(message: String?) {
-                    failed = true
-                    errorMessage = message
-                }
-
-                override fun onStart() {}
-                override fun onFinish() {}
-            })
-
-            while (!completed && !failed) {
-                Thread.sleep(100)
-            }
-
-            if (completed) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception(errorMessage ?: "FFmpeg failed"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+        val session = FFmpegKit.execute(command)
+        return if (ReturnCode.isSuccess(session.returnCode)) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception(session.allLogsAsString))
         }
     }
 
-    private fun loadFFmpegBinary(ffmpeg: FFmpeg) {
-        try {
-            ffmpeg.loadBinary(object : FFmpegLoadBinaryResponseHandler {
-                override fun onStart() {}
-                override fun onFailure() {}
-                override fun onSuccess() {}
-                override fun onFinish() {}
-            })
-        } catch (e: FFmpegNotSupportedException) {
-            throw e
-        }
-    }
-
-    private fun buildFFmpegCommand(
-        inputPath: String,
-        outputPath: String,
-        options: ConvertOptions
-    ): String {
-        val cmd = mutableListOf<String>()
-        cmd.add("-y")
-        cmd.add("-i")
-        cmd.add(inputPath)
-        cmd.add("-c:v")
-        cmd.add(options.codec)
-        cmd.add("-preset")
-        cmd.add(options.preset)
-        cmd.add("-crf")
-        cmd.add(options.crf.toString())
-        if (options.resolution != null) {
-            cmd.add("-vf")
-            cmd.add("scale=${options.resolution}")
-        }
-        if (options.bitrate != null) {
-            cmd.add("-b:v")
-            cmd.add(options.bitrate)
-        }
-        when (options.outputFormat) {
-            "webm" -> {
-                cmd.add("-c:a")
-                cmd.add("libopus")
-                cmd.add("-b:a")
-                cmd.add("128k")
-            }
-            else -> {
-                cmd.add("-c:a")
-                cmd.add("aac")
-                cmd.add("-b:a")
-                cmd.add("128k")
-            }
-        }
-        cmd.add("-f")
-        cmd.add(options.outputFormat)
-        cmd.add(outputPath)
-        return cmd.joinToString(" ")
-    }
-
-    private fun parseTime(progress: String?): Double {
-        if (progress == null) return 0.0
-        val regex = Regex("time=(\\d+):(\\d+):(\\d+\\.?\\d*)")
-        val match = regex.find(progress) ?: return 0.0
-        val hours = match.groupValues[1].toDoubleOrNull() ?: 0.0
-        val minutes = match.groupValues[2].toDoubleOrNull() ?: 0.0
-        val seconds = match.groupValues[3].toDoubleOrNull() ?: 0.0
-        return hours * 3600 + minutes * 60 + seconds
+    private fun buildFFmpegCommand(inputPath: String, outputPath: String, options: ConvertOptions): String {
+        return "-y -i \"$inputPath\" -c:v ${options.codec} -preset ${options.preset} -crf ${options.crf} " +
+            (if (options.resolution != null) "-vf scale=${options.resolution} " else "") +
+            (if (options.bitrate != null) "-b:v ${options.bitrate} " else "") +
+            when (options.outputFormat) {
+                "webm" -> "-c:a libopus -b:a 128k "
+                else -> "-c:a aac -b:a 128k "
+            } +
+            "-f ${options.outputFormat} \"$outputPath\""
     }
 }

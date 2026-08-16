@@ -8,8 +8,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.ProgressHolder
 import androidx.media3.transformer.Transformer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +46,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Not implemented
+        // Transformer cancellation not implemented here
     }
 
     private fun runMedia3Conversion(
@@ -58,6 +61,9 @@ class ConvertViewModel : ViewModel() {
                 .build()
 
             val mediaItem = MediaItem.fromUri(inputUri)
+            val editedMediaItem = EditedMediaItem.Builder(mediaItem).build()
+            val sequence = EditedMediaItemSequence.Builder(editedMediaItem).build()
+            val composition = Composition.Builder(sequence).build()
 
             var completed = false
             var failed = false
@@ -78,12 +84,12 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            // Use start(MediaItem, String) directly
-            transformer.start(mediaItem, outputUri.toString())
+            transformer.start(composition, outputUri.toString())
 
+            val progressHolder = ProgressHolder()
             while (!completed && !failed) {
                 Thread.sleep(100)
-                val progress = transformer.getProgress()
+                val progress = transformer.getProgress(progressHolder)
                 _progress.value = progress
             }
 

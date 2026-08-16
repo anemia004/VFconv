@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class ConvertViewModel : ViewModel() {
 
@@ -44,7 +45,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Cancellation not implemented in this version
+        // Cancellation not implemented
     }
 
     private fun runMedia3Conversion(
@@ -54,6 +55,10 @@ class ConvertViewModel : ViewModel() {
         options: ConvertOptions
     ): Result<Unit> {
         return try {
+            // Create a temporary output file in cache
+            val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.${options.outputFormat}")
+            val outputPath = outputFile.absolutePath
+
             val transformer = Transformer.Builder(context)
                 .setVideoMimeType(getMimeType(options.outputFormat))
                 .build()
@@ -82,8 +87,7 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            // Correct method: start(EditedMediaItem, String)
-            transformer.start(editedMediaItem, outputUri.toString())
+            transformer.start(editedMediaItem, outputPath)
 
             val progressHolder = ProgressHolder()
             while (!completed && !failed) {
@@ -93,8 +97,14 @@ class ConvertViewModel : ViewModel() {
             }
 
             if (completed) {
+                // Copy the temporary file to the user-selected Uri
+                context.contentResolver.openOutputStream(outputUri)?.use { out ->
+                    outputFile.inputStream().use { it.copyTo(out) }
+                } ?: throw Exception("Cannot open output stream")
+                outputFile.delete()
                 Result.success(Unit)
             } else {
+                outputFile.delete()
                 Result.failure(Exception(errorMessage ?: "Conversion failed"))
             }
         } catch (e: Exception) {

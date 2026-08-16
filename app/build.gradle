@@ -51,6 +51,13 @@ android {
             outputFileName = "VFconv_${version}_${formattedDate}.apk"
         }
     }
+
+    // Add flatDir repository for local AAR
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+    }
 }
 
 dependencies {
@@ -63,6 +70,33 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.preference:preference:1.2.1'
-    // FFmpegKit – includes real FFmpeg binaries
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
+
+    // FFmpegKit AAR from GitHub release
+    implementation(name: 'ffmpeg-kit-full-gpl', ext: 'aar')
+    implementation 'com.arthenica:smart-exception-java:0.2.1'
+}
+
+// Download AAR from GitHub release before build
+afterEvaluate {
+    def aarUrl = 'https://github.com/NooruddinLakhani/ffmpeg-kit-full-gpl/releases/download/v1.0.0/ffmpeg-kit-full-gpl.aar'
+    def aarFile = file("${projectDir}/libs/ffmpeg-kit-full-gpl.aar")
+
+    tasks.register("downloadAar") {
+        doLast {
+            if (!aarFile.parentFile.exists()) {
+                aarFile.parentFile.mkdirs()
+            }
+            if (!aarFile.exists()) {
+                println "Downloading AAR from $aarUrl..."
+                new URL(aarUrl).withInputStream { i ->
+                    aarFile.withOutputStream { it << i }
+                }
+                println "AAR downloaded to ${aarFile.absolutePath}"
+            } else {
+                println "AAR already exists at ${aarFile.absolutePath}"
+            }
+        }
+    }
+
+    preBuild.dependsOn("downloadAar")
 }

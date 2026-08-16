@@ -7,9 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
-import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.ProgressHolder
@@ -46,7 +44,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Cancellation not implemented in this minimal version
+        // Cancellation not implemented in this version
     }
 
     private fun runMedia3Conversion(
@@ -61,21 +59,21 @@ class ConvertViewModel : ViewModel() {
                 .build()
 
             val mediaItem = MediaItem.fromUri(inputUri)
-            val editedMediaItem = EditedMediaItem.Builder(mediaItem).build()
-            val sequence = EditedMediaItemSequence.Builder(editedMediaItem).build()
-            val composition = Composition.Builder(sequence).build()
+            val editedMediaItem = EditedMediaItem.Builder(mediaItem)
+                .setRemoveAudio(false)
+                .build()
 
             var completed = false
             var failed = false
             var errorMessage: String? = null
 
             transformer.addListener(object : Transformer.Listener {
-                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                override fun onCompleted(composition: androidx.media3.transformer.Composition, exportResult: ExportResult) {
                     completed = true
                 }
 
                 override fun onError(
-                    composition: Composition,
+                    composition: androidx.media3.transformer.Composition,
                     exportResult: ExportResult,
                     exportException: ExportException
                 ) {
@@ -84,7 +82,8 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            transformer.start(composition, outputUri.toString())
+            // Correct method: start(EditedMediaItem, String)
+            transformer.start(editedMediaItem, outputUri.toString())
 
             val progressHolder = ProgressHolder()
             while (!completed && !failed) {

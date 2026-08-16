@@ -63,6 +63,6 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.preference:preference:1.2.1'
-    // FFmpegKit – includes FFmpeg binaries for all ABIs
+    // FFmpegKit – includes real FFmpeg binaries
     implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
 }

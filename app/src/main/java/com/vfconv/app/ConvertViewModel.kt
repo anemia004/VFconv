@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.transformer.Composition
+import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
@@ -43,7 +44,7 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
-        // Media3 Transformer cancellation not implemented in this simplified version
+        // Not implemented
     }
 
     private fun runMedia3Conversion(
@@ -58,6 +59,9 @@ class ConvertViewModel : ViewModel() {
                 .build()
 
             val mediaItem = MediaItem.fromUri(inputUri)
+            val editedMediaItem = EditedMediaItem.Builder(mediaItem)
+                .setRemoveAudio(false)
+                .build()
 
             var completed = false
             var failed = false
@@ -78,11 +82,12 @@ class ConvertViewModel : ViewModel() {
                 }
             })
 
-            // Start with MediaItem directly (no EditedMediaItem needed)
-            transformer.start(mediaItem, outputUri.toString())
+            transformer.start(editedMediaItem, outputUri.toString())
 
             while (!completed && !failed) {
                 Thread.sleep(100)
+                val progress = transformer.getProgress()
+                _progress.value = progress
             }
 
             if (completed) {

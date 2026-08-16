@@ -1,5 +1,6 @@
 package com.vfconv.app
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -7,9 +8,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.DialogFragment
+import androidx.preference.PreferenceManager
 
 class SettingsDialogFragment : DialogFragment() {
+
+    private val chooseFolderLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri?.let {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            prefs.edit().putString("output_folder_uri", it.toString()).apply()
+            Toast.makeText(context, "Output folder set", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -23,16 +36,19 @@ class SettingsDialogFragment : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         view.findViewById<View>(R.id.btn_close).setOnClickListener { dismiss() }
-        view.findViewById<View>(R.id.btn_update_ffmpeg).setOnClickListener {
-            // Open GitHub releases page
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/yourusername/VFconv/releases"))
-            startActivity(intent)
-        }
+
         view.findViewById<View>(R.id.btn_clear_cache).setOnClickListener {
+            val cacheDir = requireContext().cacheDir
+            cacheDir.deleteRecursively()
             Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
         }
+
         view.findViewById<View>(R.id.btn_choose_folder).setOnClickListener {
-            Toast.makeText(context, "Folder picker would open", Toast.LENGTH_SHORT).show()
+            chooseFolderLauncher.launch(null)
+        }
+
+        view.findViewById<View>(R.id.btn_about).setOnClickListener {
+            Toast.makeText(context, "VFconv v1.0.0", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -42,6 +58,8 @@ class SettingsDialogFragment : DialogFragment() {
             (resources.displayMetrics.widthPixels * 0.9).toInt(),
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        dialog?.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        dialog?.window?.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+        )
     }
 }

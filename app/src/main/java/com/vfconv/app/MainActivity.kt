@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.vfconv.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
@@ -60,12 +61,19 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Select a video first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val extension = when (binding.dropdownFormat.getSelected()) {
-                "MKV" -> "mkv"
-                "WebM" -> "webm"
-                else -> "mp4"
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            val folderUriString = prefs.getString("output_folder_uri", null)
+            if (folderUriString != null) {
+                val folderUri = Uri.parse(folderUriString)
+                saveOutputToFolder(folderUri)
+            } else {
+                val extension = when (binding.dropdownFormat.getSelected()) {
+                    "MKV" -> "mkv"
+                    "WebM" -> "webm"
+                    else -> "mp4"
+                }
+                createOutputLauncher.launch("converted_video.$extension")
             }
-            createOutputLauncher.launch("converted_video.$extension")
         }
         binding.btnCancel.setOnClickListener { viewModel.cancel() }
         binding.btnSettings.setOnClickListener {
@@ -102,6 +110,29 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun saveOutputToFolder(folderUri: Uri) {
+        val inputUri = inputUri ?: return
+        val extension = when (binding.dropdownFormat.getSelected()) {
+            "MKV" -> "mkv"
+            "WebM" -> "webm"
+            else -> "mp4"
+        }
+        val fileName = "VFconv_${System.currentTimeMillis()}.$extension"
+        val outputUri = createFileInFolder(folderUri, fileName)
+        if (outputUri != null) {
+            startConversion(outputUri)
+        } else {
+            Toast.makeText(this, "Cannot create file in selected folder", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun createFileInFolder(folderUri: Uri, fileName: String): Uri? {
+        val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, folderUri)
+            ?: return null
+        val newFile = documentFile.createFile("video/*", fileName) ?: return null
+        return newFile.uri
     }
 
     private fun startConversion(outputUri: Uri) {

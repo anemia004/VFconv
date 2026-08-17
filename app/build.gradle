@@ -74,6 +74,6 @@ dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.preference:preference:1.2.1'
 
-    // Use GPL variant of ffmpeg-kit-next (includes libx264, libx265, etc.)
-    implementation 'com.github.arthenica:ffmpeg-kit-next-android-gpl:8.1.1'
+    // Official Maven Central artifact (includes GPL codecs)
+    implementation 'com.arthenica:ffmpeg-kit-next-android-gpl:8.1.1'
 }

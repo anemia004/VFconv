@@ -61,6 +61,12 @@ android {
             outputFileName = "VFconv_${version}_${formattedDate}.apk"
         }
     }
+
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+    }
 }
 
 dependencies {
@@ -74,6 +80,6 @@ dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.preference:preference:1.2.1'
 
-    // Use JitPack artifact for ffmpeg-kit-next (GPL)
-    implementation 'com.github.arthenica:ffmpeg-kit-next-android-gpl:8.1.1'
+    // Local AAR built from source
+    implementation files('libs/ffmpeg-kit-next-android-gpl-8.1.1.aar')
 }

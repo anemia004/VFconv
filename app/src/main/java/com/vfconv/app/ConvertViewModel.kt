@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,22 +72,15 @@ class ConvertViewModel : ViewModel() {
         FFmpegKit.cancel()
     }
 
-    private suspend fun runFFmpeg(
-        inputPath: String,
-        outputPath: String,
-        options: ConvertOptions
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        val commandArray = buildFFmpegCommand(inputPath, outputPath, options)
-        Log.d("VFconv", "Executing: ${commandArray.joinToString(" ")}")
+    private fun runFFmpeg(inputPath: String, outputPath: String, options: ConvertOptions): Result<Unit> {
+        val command = buildFFmpegCommand(inputPath, outputPath, options)
+        Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
 
-        val session = FFmpegKit.executeWithArguments(commandArray)
-        if (ReturnCode.isSuccess(session.returnCode)) {
+        val session = FFmpegKit.executeWithArguments(command)
+        return if (ReturnCode.isSuccess(session.returnCode)) {
             Result.success(Unit)
         } else {
-            // Capture full logs for debugging
-            val logs = session.allLogsAsString
-            Log.e("VFconv", "FFmpeg failed: $logs")
-            Result.failure(Exception(logs))
+            Result.failure(Exception(session.allLogsAsString))
         }
     }
 

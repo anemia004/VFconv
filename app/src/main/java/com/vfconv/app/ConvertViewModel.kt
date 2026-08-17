@@ -36,6 +36,10 @@ class ConvertViewModel : ViewModel() {
                     _state.value = ConversionState.Error("Cannot open input stream")
                     return@launch
                 }
+                if (inputFile.length() == 0L) {
+                    _state.value = ConversionState.Error("Input file is empty")
+                    return@launch
+                }
             } catch (e: Exception) {
                 _state.value = ConversionState.Error(e.message)
                 return@launch
@@ -47,7 +51,7 @@ class ConvertViewModel : ViewModel() {
                 runFFmpeg(inputFile.absolutePath, outputFile.absolutePath, options)
             }
 
-            if (result.isSuccess) {
+            if (result.isSuccess && outputFile.length() > 0) {
                 try {
                     context.contentResolver.openOutputStream(outputUri)?.use { out ->
                         outputFile.inputStream().use { it.copyTo(out) }
@@ -63,7 +67,7 @@ class ConvertViewModel : ViewModel() {
             } else {
                 outputFile.delete()
                 inputFile.delete()
-                _state.value = ConversionState.Error(result.exceptionOrNull()?.message)
+                _state.value = ConversionState.Error(result.exceptionOrNull()?.message ?: "Conversion failed")
             }
         }
     }

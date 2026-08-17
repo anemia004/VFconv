@@ -1,9 +1,8 @@
+// build.gradle (root)
 buildscript {
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal()
-        maven { url 'https://jitpack.io' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.1.0'
@@ -11,4 +10,9 @@ buildscript {
     }
 }
 
-// No allprojects repositories block – settings.gradle handles dependency repos
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

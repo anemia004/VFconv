@@ -76,19 +76,50 @@ class ConvertViewModel : ViewModel() {
         FFmpegKit.cancel()
     }
 
-    private fun runFFmpeg(inputPath: String, outputPath: String, options: ConvertOptions): Result<Unit> {
-        val command = buildFFmpegCommand(inputPath, outputPath, options)
-        Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
+    private suspend fun runFFmpeg(
+        inputPath: String,
+        outputPath: String,
+        options: ConvertOptions
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        // First attempt with selected codec/format
+        val selectedCommand = buildUserCommand(inputPath, outputPath, options)
+        Log.d("VFconv", "Attempt 1: ${selectedCommand.joinToString(" ")}")
+        var session = FFmpegKit.executeWithArguments(selectedCommand)
+        if (ReturnCode.isSuccess(session.returnCode)) {
+            return@withContext Result.success(Unit)
+        }
 
-        val session = FFmpegKit.executeWithArguments(command)
-        return if (ReturnCode.isSuccess(session.returnCode)) {
+        val firstLogs = session.allLogsAsString
+        Log.e("VFconv", "Selected codec failed: $firstLogs")
+
+        // Fallback to H.264/MP4
+        val fallbackFile = File(outputPath).parentFile!!.let {
+            File(it, "fallback_${System.currentTimeMillis()}.mp4")
+        }
+        val fallbackCommand = arrayOf(
+            "-y", "-i", inputPath,
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "23",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-movflags", "+faststart",
+            fallbackFile.absolutePath
+        )
+        Log.d("VFconv", "Attempt 2 (fallback): ${fallbackCommand.joinToString(" ")}")
+        session = FFmpegKit.executeWithArguments(fallbackCommand)
+        if (ReturnCode.isSuccess(session.returnCode) && fallbackFile.length() > 0) {
+            fallbackFile.copyTo(File(outputPath), overwrite = true)
+            fallbackFile.delete()
             Result.success(Unit)
         } else {
-            Result.failure(Exception(session.allLogsAsString))
+            val secondLogs = session.allLogsAsString
+            Log.e("VFconv", "Fallback failed: $secondLogs")
+            Result.failure(Exception("FFmpeg failed with both attempts"))
         }
     }
 
-    private fun buildFFmpegCommand(inputPath: String, outputPath: String, options: ConvertOptions): Array<String> {
+    private fun buildUserCommand(inputPath: String, outputPath: String, options: ConvertOptions): Array<String> {
         val args = mutableListOf<String>()
         args.add("-y")
         args.add("-i")

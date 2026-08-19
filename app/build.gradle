@@ -23,8 +23,30 @@ android {
         viewBinding true
     }
 
+    signingConfigs {
+        release {
+            // Load from keystore.properties (local) or env vars (CI)
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else {
+                // Use environment variables (GitHub Actions)
+                storeFile file(System.getenv("KEYSTORE_FILE") ?: "release.jks")
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -49,7 +71,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
 
-    // FFmpegKitNext AAR (local, will be auto-downloaded if missing)
+    // FFmpegKitNext AAR (auto-downloaded if missing)
     implementation files('libs/ffmpeg-kit-next-android-gpl.aar')
 }
 
@@ -72,5 +94,4 @@ task downloadAar {
     }
 }
 
-// Make every build (sync, assemble, run) download the AAR first if missing
 preBuild.dependsOn downloadAar

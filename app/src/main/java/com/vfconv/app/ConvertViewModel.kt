@@ -27,7 +27,7 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache (FFmpeg needs a file path)
+            // Copy input to cache
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
@@ -85,14 +85,14 @@ class ConvertViewModel : ViewModel() {
         val selectedCommand = buildUserCommand(inputPath, outputPath, options)
         Log.d("VFconv", "Attempt 1: ${selectedCommand.joinToString(" ")}")
         var session = FFmpegKit.executeWithArguments(selectedCommand)
-        if (ReturnCode.isSuccess(session.returnCode)) {
+        if (ReturnCode.isSuccess(session.getReturnCode())) {
             return@withContext Result.success(Unit)
         }
 
-        val firstLogs = session.allLogsAsString
+        val firstLogs = session.getAllLogsAsString()
         Log.e("VFconv", "Selected codec failed: $firstLogs")
 
-        // Fallback to H.264/MP4 (most compatible)
+        // Fallback to H.264/MP4
         val fallbackFile = File(outputPath).parentFile!!.let {
             File(it, "fallback_${System.currentTimeMillis()}.mp4")
         }
@@ -108,12 +108,12 @@ class ConvertViewModel : ViewModel() {
         )
         Log.d("VFconv", "Attempt 2 (fallback): ${fallbackCommand.joinToString(" ")}")
         session = FFmpegKit.executeWithArguments(fallbackCommand)
-        if (ReturnCode.isSuccess(session.returnCode) && fallbackFile.length() > 0) {
+        if (ReturnCode.isSuccess(session.getReturnCode()) && fallbackFile.length() > 0) {
             fallbackFile.copyTo(File(outputPath), overwrite = true)
             fallbackFile.delete()
             Result.success(Unit)
         } else {
-            val secondLogs = session.allLogsAsString
+            val secondLogs = session.getAllLogsAsString()
             Log.e("VFconv", "Fallback failed: $secondLogs")
             Result.failure(Exception("FFmpeg failed with both attempts"))
         }

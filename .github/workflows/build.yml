@@ -1,10 +1,10 @@
 name: Build & Release
 
 on:
-  workflow_dispatch:          # manual trigger
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'                  # version tags only (e.g., v1.0.0)
+      - 'v*'
 
 permissions:
   contents: write
@@ -50,7 +50,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: gradle assembleRelease   # <-- changed from ./gradlew to gradle
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4

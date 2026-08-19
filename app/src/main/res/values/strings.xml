@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">VFconv</string>
+    <string name="select_video">Select Video</string>
+    <string name="convert">Convert</string>
+    <string name="cancel">Cancel</string>
+    <string name="progress">Progress</string>
+</resources>

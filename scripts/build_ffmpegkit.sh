@@ -18,17 +18,24 @@ if [ -z "$PROFILE" ]; then
 fi
 echo "Using profile: $PROFILE"
 
-# Build for Android with GPL enabled (includes libx264, libx265, etc.)
-./nix-android.sh -p "$PROFILE" --enable-gpl
+# Build with GPL and essential codecs, for arm-v7a, arm-v7a-neon, arm64-v8a
+./nix-android.sh -p "$PROFILE" \
+  --enable-gpl \
+  --enable-x264 \
+  --enable-x265 \
+  --enable-libvpx \
+  --enable-opus \
+  --disable-x86 \
+  --disable-x86-64
 
-# Find the generated AAR (any .aar containing "gpl" and "android")
-AAR=$(find . -name "*.aar" | grep -i "gpl" | grep -i "android" | head -1)
+# Find the generated AAR (any .aar file; there will be exactly one)
+AAR=$(find . -name "*.aar" | head -1)
 if [ -z "$AAR" ]; then
-  echo "No GPL Android AAR found!"
+  echo "No AAR file found!"
   exit 1
 fi
 
-# Create app/libs if not exists and copy the AAR
+# Copy the AAR to app/libs
 mkdir -p ../app/libs
 cp "$AAR" ../app/libs/ffmpeg-kit-next-android-gpl-8.1.1.aar
 

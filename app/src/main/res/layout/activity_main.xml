@@ -86,8 +86,8 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <com.vfconv.app.GlassDropdownView
-                    android:id="@+id/dropdownFormat"
+                <com.vfconv.app.LiquidBottomTabsView
+                    android:id="@+id/tabFormat"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp" />
@@ -135,17 +135,13 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <Button
+        <com.vfconv.app.LiquidGlassButton
             android:id="@+id/btnConvert"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Convert"
-            android:background="@drawable/glass_button_primary"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:paddingVertical="14dp"
-            android:enabled="false" />
+            android:enabled="false"
+            app:label="Convert" />
 
         <LinearLayout
             android:id="@+id/progressCard"
@@ -176,15 +172,13 @@
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <Button
+        <com.vfconv.app.LiquidGlassButton
             android:id="@+id/btnCancel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Cancel"
-            android:background="@drawable/glass_button"
-            android:textColor="#FFFFFF"
-            android:enabled="false" />
+            android:enabled="false"
+            app:label="Cancel" />
 
         <TextView
             android:id="@+id/tvOutput"

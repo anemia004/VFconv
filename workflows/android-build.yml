@@ -1,0 +1,86 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Download prebuilt AAR from your release repo
+      - name: Download FFmpegKitNext AAR
+        run: |
+          mkdir -p app/libs
+          curl -L -o app/libs/ffmpeg-kit-next-android-gpl-8.1.1.aar \
+            "https://github.com/anemia004/ffmpeg-kit-next/releases/download/v8.1.1/ffmpeg-kit-next-android-gpl.aar"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Decode keystore from Base64
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > ${{ github.workspace }}/vfconv-release.jks
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/vfconv-release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle assembleRelease
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-apk
+          path: app/build/outputs/apk/release/*.apk
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.apk"
+          tag_name: ${{ github.ref_name }}
+          name: "VFconv ${{ github.ref_name }}"
+          body: "Release ${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          

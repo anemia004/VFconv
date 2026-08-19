@@ -101,7 +101,6 @@ class ConvertViewModel : ViewModel() {
         val command = mutableListOf<String>()
 
         if (options.codec == "copy") {
-            // Fastest: copy streams without re-encoding
             command.addAll(listOf(
                 "-y",
                 "-i", inputPath,
@@ -136,7 +135,11 @@ class ConvertViewModel : ViewModel() {
             command.add(outputPath)
         }
 
-        Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
+        // Build command string with quotes for paths
+        val commandString = command.joinToString(" ") { arg ->
+            if (arg.startsWith("/") || arg.contains(" ")) "\"$arg\"" else arg
+        }
+        Log.d("VFconv", "Executing: $commandString")
 
         val latch = CountDownLatch(1)
         var success = false
@@ -144,11 +147,11 @@ class ConvertViewModel : ViewModel() {
 
         try {
             val session = FFmpegKit.executeAsync(
-                command.toTypedArray(),
+                commandString,
                 { completedSession ->
-                    success = ReturnCode.isSuccess(completedSession.returnCode)
+                    success = ReturnCode.isSuccess(completedSession.getReturnCode())
                     if (!success) {
-                        errorMessage = completedSession.allLogsAsString
+                        errorMessage = completedSession.getAllLogsAsString()
                     }
                     latch.countDown()
                 },

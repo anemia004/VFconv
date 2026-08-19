@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="format_options">
+        <item>MP4</item>
+        <item>MKV</item>
+        <item>WebM</item>
+    </string-array>
+
+    <string-array name="codec_options">
+        <item>Copy (no re-encode)</item>
+        <item>H.264</item>
+        <item>H.265</item>
+        <item>VP9</item>
+        <item>AV1</item>
+    </string-array>
+
+    <string-array name="resolution_options">
+        <item>Original</item>
+        <item>1080p</item>
+        <item>720p</item>
+        <item>480p</item>
+        <item>360p</item>
+    </string-array>
+
+    <string-array name="bitrate_options">
+        <item>Default</item>
+        <item>1 Mbps</item>
+        <item>2 Mbps</item>
+        <item>4 Mbps</item>
+        <item>8 Mbps</item>
+    </string-array>
+</resources>

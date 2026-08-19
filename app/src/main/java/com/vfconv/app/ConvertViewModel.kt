@@ -27,7 +27,7 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache (FFmpeg needs a file path)
+            // Copy input to cache
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
@@ -45,10 +45,10 @@ class ConvertViewModel : ViewModel() {
                 return@launch
             }
 
-            val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.${options.outputFormat}")
+            val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.mp4")
 
             val result = withContext(Dispatchers.IO) {
-                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath, options)
+                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath)
             }
 
             if (result.isSuccess && outputFile.length() > 0) {
@@ -76,87 +76,27 @@ class ConvertViewModel : ViewModel() {
         FFmpegKit.cancel()
     }
 
-    private suspend fun runFFmpeg(
-        inputPath: String,
-        outputPath: String,
-        options: ConvertOptions
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        // First attempt: user's selected codec/format
-        val selectedCommand = buildUserCommand(inputPath, outputPath, options)
-        Log.d("VFconv", "Attempt 1: ${selectedCommand.joinToString(" ")}")
-        var session = FFmpegKit.executeWithArguments(selectedCommand)
-        if (ReturnCode.isSuccess(session.getReturnCode())) {
-            return@withContext Result.success(Unit)
-        }
+    private suspend fun runFFmpeg(inputPath: String, outputPath: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val command = arrayOf(
+                "-y",
+                "-i", inputPath,
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "23",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                outputPath
+            )
+            Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
 
-        val firstLogs = session.getAllLogsAsString()
-        Log.e("VFconv", "Selected codec failed: $firstLogs")
-
-        // Fallback to MPEG-4 / AAC MP4 (always available)
-        val fallbackFile = File(outputPath).parentFile!!.let {
-            File(it, "fallback_${System.currentTimeMillis()}.mp4")
-        }
-        val fallbackCommand = arrayOf(
-            "-y", "-i", inputPath,
-            "-c:v", "mpeg4",
-            "-q:v", "5",
-            "-c:a", "aac",
-            "-b:a", "128k",
-            fallbackFile.absolutePath
-        )
-        Log.d("VFconv", "Attempt 2 (fallback): ${fallbackCommand.joinToString(" ")}")
-        session = FFmpegKit.executeWithArguments(fallbackCommand)
-        if (ReturnCode.isSuccess(session.getReturnCode()) && fallbackFile.length() > 0) {
-            fallbackFile.copyTo(File(outputPath), overwrite = true)
-            fallbackFile.delete()
-            Result.success(Unit)
-        } else {
-            val secondLogs = session.getAllLogsAsString()
-            Log.e("VFconv", "Fallback failed: $secondLogs")
-            Result.failure(Exception("FFmpeg failed with both attempts"))
-        }
-    }
-
-    private fun buildUserCommand(
-        inputPath: String,
-        outputPath: String,
-        options: ConvertOptions
-    ): Array<String> {
-        val args = mutableListOf<String>()
-        args.add("-y")
-        args.add("-i")
-        args.add(inputPath)
-        args.add("-c:v")
-        args.add(options.codec)   // e.g., "libx264", "libx265", "libvpx-vp9", "libaom-av1"
-        args.add("-preset")
-        args.add(options.preset)
-        args.add("-crf")
-        args.add(options.crf.toString())
-        if (options.resolution != null) {
-            args.add("-vf")
-            args.add("scale=${options.resolution}")
-        }
-        if (options.bitrate != null) {
-            args.add("-b:v")
-            args.add(options.bitrate)
-        }
-        when (options.outputFormat) {
-            "webm" -> {
-                args.add("-c:a")
-                args.add("libopus")
-                args.add("-b:a")
-                args.add("128k")
-            }
-            else -> {
-                args.add("-c:a")
-                args.add("aac")
-                args.add("-b:a")
-                args.add("128k")
+            val session = FFmpegKit.executeWithArguments(command)
+            if (ReturnCode.isSuccess(session.getReturnCode())) {
+                Result.success(Unit)
+            } else {
+                val logs = session.getAllLogsAsString()
+                Log.e("VFconv", "FFmpeg failed: $logs")
+                Result.failure(Exception(logs))
             }
         }
-        args.add("-f")
-        args.add(options.outputFormat)
-        args.add(outputPath)
-        return args.toTypedArray()
-    }
 }

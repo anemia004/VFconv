@@ -116,12 +116,11 @@ class ConvertViewModel : ViewModel() {
                 "-fflags", "+genpts+discardcorrupt",
                 "-i", inputPath,
                 "-c:v", options.codec,
-                "-preset", "ultrafast",   // force ultrafast for speed
+                "-preset", "ultrafast",
                 "-crf", options.crf.toString(),
-                "-threads", "0"            // use all CPU cores
+                "-threads", "0"
             ))
 
-            // Add speed tweaks for H.264
             if (options.codec == "libx264") {
                 command.addAll(listOf("-tune", "zerolatency"))
             }
@@ -129,7 +128,6 @@ class ConvertViewModel : ViewModel() {
             options.resolution?.let { res -> command.addAll(listOf("-vf", "scale=$res")) }
             options.bitrate?.let { bitrate -> command.addAll(listOf("-b:v", bitrate)) }
 
-            // VP9 realtime settings for faster encoding
             if (options.codec == "libvpx-vp9") {
                 command.addAll(listOf("-deadline", "realtime", "-cpu-used", "8"))
             }

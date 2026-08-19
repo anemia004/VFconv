@@ -27,7 +27,7 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache
+            // Copy input to cache (FFmpeg needs a file path)
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
@@ -81,7 +81,7 @@ class ConvertViewModel : ViewModel() {
         outputPath: String,
         options: ConvertOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        // First attempt: selected codec/format
+        // First attempt: user's selected codec/format
         val selectedCommand = buildUserCommand(inputPath, outputPath, options)
         Log.d("VFconv", "Attempt 1: ${selectedCommand.joinToString(" ")}")
         var session = FFmpegKit.executeWithArguments(selectedCommand)
@@ -92,18 +92,16 @@ class ConvertViewModel : ViewModel() {
         val firstLogs = session.getAllLogsAsString()
         Log.e("VFconv", "Selected codec failed: $firstLogs")
 
-        // Fallback to H.264/MP4
+        // Fallback to MPEG-4 / AAC MP4 (always available)
         val fallbackFile = File(outputPath).parentFile!!.let {
             File(it, "fallback_${System.currentTimeMillis()}.mp4")
         }
         val fallbackCommand = arrayOf(
             "-y", "-i", inputPath,
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "23",
+            "-c:v", "mpeg4",
+            "-q:v", "5",
             "-c:a", "aac",
             "-b:a", "128k",
-            "-movflags", "+faststart",
             fallbackFile.absolutePath
         )
         Log.d("VFconv", "Attempt 2 (fallback): ${fallbackCommand.joinToString(" ")}")
@@ -129,7 +127,7 @@ class ConvertViewModel : ViewModel() {
         args.add("-i")
         args.add(inputPath)
         args.add("-c:v")
-        args.add(options.codec)
+        args.add(options.codec)   // e.g., "libx264", "libx265", "libvpx-vp9", "libaom-av1"
         args.add("-preset")
         args.add(options.preset)
         args.add("-crf")

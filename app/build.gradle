@@ -83,6 +83,9 @@ dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'androidx.preference:preference:1.2.1'
 
-    // Local AAR (auto-downloaded by the snippet above)
+    // FFmpegKitNext AAR
     implementation files('libs/ffmpeg-kit-next-android-gpl-8.1.1.aar')
+
+    // Required dependency for FFmpegKitNext
+    implementation 'com.arthenica:smart-exception-java:0.2.1'
 }

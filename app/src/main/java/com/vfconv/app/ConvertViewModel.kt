@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.CountDownLatch
 
 class ConvertViewModel : ViewModel() {
 
@@ -51,7 +50,7 @@ class ConvertViewModel : ViewModel() {
             val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.mp4")
 
             val result = withContext(Dispatchers.IO) {
-                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath)
+                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath, options)
             }
 
             if (result.isSuccess && outputFile.length() > 0) {
@@ -63,6 +62,11 @@ class ConvertViewModel : ViewModel() {
                     outputFile.delete()
                     inputFile.delete()
                     _state.value = ConversionState.Success
+                } catch (e: SecurityException) {
+                    Log.e("VFconv", "SecurityException while writing output", e)
+                    outputFile.delete()
+                    inputFile.delete()
+                    _state.value = ConversionState.Error("Permission denied: ${e.message}")
                 } catch (e: Exception) {
                     outputFile.delete()
                     inputFile.delete()
@@ -81,23 +85,38 @@ class ConvertViewModel : ViewModel() {
         FFmpegKit.cancel()
     }
 
-    private suspend fun runFFmpeg(inputPath: String, outputPath: String): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val command = arrayOf(
-                "-y",
-                "-i", inputPath,
-                "-c:v", "libx264",
-                "-preset", "ultrafast",   // much faster for testing
-                "-crf", "23",
-                "-c:a", "aac",
-                "-b:a", "128k",
-                outputPath
-            )
-            Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
+    private suspend fun runFFmpeg(
+        inputPath: String,
+        outputPath: String,
+        options: ConvertOptions
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        // Build command with optional parameters
+        val command = mutableListOf(
+            "-y",
+            "-i", inputPath,
+            "-c:v", options.codec,
+            "-preset", options.preset,
+            "-crf", options.crf.toString()
+        )
 
-            val session = FFmpegKit.executeWithArguments(command)
-            // Wait for completion using a latch, because execute is asynchronous?
-            // Actually executeWithArguments is synchronous in FFmpegKit, but we add safety.
+        // Add resolution scale if specified
+        options.resolution?.let { res ->
+            command.addAll(listOf("-vf", "scale=$res"))
+        }
+
+        // Add bitrate if specified
+        options.bitrate?.let { bitrate ->
+            command.addAll(listOf("-b:v", bitrate))
+        }
+
+        // Always add audio codec
+        command.addAll(listOf("-c:a", "aac", "-b:a", "128k"))
+        command.add(outputPath)
+
+        Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
+
+        try {
+            val session = FFmpegKit.executeWithArguments(command.toTypedArray())
             if (ReturnCode.isSuccess(session.getReturnCode())) {
                 Log.d("VFconv", "FFmpeg success")
                 Result.success(Unit)
@@ -106,5 +125,12 @@ class ConvertViewModel : ViewModel() {
                 Log.e("VFconv", "FFmpeg failed: $logs")
                 Result.failure(Exception(logs))
             }
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e("VFconv", "Native library missing (UnsatisfiedLinkError)", e)
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e("VFconv", "FFmpeg execution error", e)
+            Result.failure(e)
         }
+    }
 }

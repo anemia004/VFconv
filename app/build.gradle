@@ -57,8 +57,8 @@ android {
     applicationVariants.all { variant ->
         variant.outputs.all {
             def version = variant.versionName
-            def formattedDate = new Date().format('yyyyMMdd')
-            outputFileName = "VFconv_${version}_${formattedDate}.apk"
+            def releaseName = System.getenv("RELEASE_NAME") ?: version
+            outputFileName = "VFconv_${releaseName}.apk"
         }
     }
 }

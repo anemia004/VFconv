@@ -27,7 +27,7 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache
+            // Copy input to cache (FFmpeg needs a file path)
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
@@ -81,7 +81,7 @@ class ConvertViewModel : ViewModel() {
         outputPath: String,
         options: ConvertOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        // First attempt with selected codec/format
+        // First attempt: selected codec/format
         val selectedCommand = buildUserCommand(inputPath, outputPath, options)
         Log.d("VFconv", "Attempt 1: ${selectedCommand.joinToString(" ")}")
         var session = FFmpegKit.executeWithArguments(selectedCommand)
@@ -92,7 +92,7 @@ class ConvertViewModel : ViewModel() {
         val firstLogs = session.allLogsAsString
         Log.e("VFconv", "Selected codec failed: $firstLogs")
 
-        // Fallback to H.264/MP4
+        // Fallback to H.264/MP4 (most compatible)
         val fallbackFile = File(outputPath).parentFile!!.let {
             File(it, "fallback_${System.currentTimeMillis()}.mp4")
         }
@@ -119,7 +119,11 @@ class ConvertViewModel : ViewModel() {
         }
     }
 
-    private fun buildUserCommand(inputPath: String, outputPath: String, options: ConvertOptions): Array<String> {
+    private fun buildUserCommand(
+        inputPath: String,
+        outputPath: String,
+        options: ConvertOptions
+    ): Array<String> {
         val args = mutableListOf<String>()
         args.add("-y")
         args.add("-i")

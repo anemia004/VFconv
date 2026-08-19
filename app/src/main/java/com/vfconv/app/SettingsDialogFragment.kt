@@ -1,5 +1,6 @@
 package com.vfconv.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +16,10 @@ class SettingsDialogFragment : DialogFragment() {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         uri?.let {
+            requireContext().contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             prefs.edit().putString("output_folder_uri", it.toString()).apply()
             Toast.makeText(context, "Output folder set", Toast.LENGTH_SHORT).show()

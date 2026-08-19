@@ -33,7 +33,6 @@ class ConvertViewModel : ViewModel() {
             _state.value = ConversionState.Running
             _progress.value = 0
 
-            // Copy input to cache
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
             try {
                 context.contentResolver.openInputStream(inputUri)?.use { input ->
@@ -99,7 +98,6 @@ class ConvertViewModel : ViewModel() {
             add("-i")
             add(inputPath)
 
-            // --- Video ---
             if (options.codec == "copy") {
                 add("-c:v")
                 add("copy")
@@ -126,7 +124,6 @@ class ConvertViewModel : ViewModel() {
                 }
             }
 
-            // --- Audio ---
             if (options.codec == "copy") {
                 add("-c:a")
                 add("copy")
@@ -140,14 +137,11 @@ class ConvertViewModel : ViewModel() {
             add(outputPath)
         }.toTypedArray()
 
-        // Build a single string command (FFmpegKit accepts either)
         val commandString = command.joinToString(" ")
-
         Log.d("VFconv", "Command: $commandString")
 
         val deferred = CompletableDeferred<Result<Unit>>()
 
-        // Execute asynchronously with callbacks
         FFmpegKit.executeAsync(
             commandString,
             { session ->
@@ -158,10 +152,10 @@ class ConvertViewModel : ViewModel() {
                 }
             },
             { log ->
-                Log.d("VFconv", log.getMessage())
+                Log.d("VFconv", log.message)   // <-- FIXED: use property
             },
             { statistics ->
-                val seconds = statistics.getTime() / 1_000_000
+                val seconds = statistics.time / 1_000_000   // <-- FIXED: use property
                 _progress.value = (seconds % 100).toInt()
             }
         )

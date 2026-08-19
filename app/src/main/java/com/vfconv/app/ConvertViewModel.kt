@@ -140,24 +140,28 @@ class ConvertViewModel : ViewModel() {
             add(outputPath)
         }.toTypedArray()
 
-        Log.d("VFconv", "Command: ${command.joinToString(" ")}")
+        // Build a single string command (FFmpegKit accepts either)
+        val commandString = command.joinToString(" ")
+
+        Log.d("VFconv", "Command: $commandString")
 
         val deferred = CompletableDeferred<Result<Unit>>()
 
+        // Execute asynchronously with callbacks
         FFmpegKit.executeAsync(
-            command,
+            commandString,
             { session ->
-                if (ReturnCode.isSuccess(session.returnCode)) {
+                if (ReturnCode.isSuccess(session.getReturnCode())) {
                     deferred.complete(Result.success(Unit))
                 } else {
-                    deferred.complete(Result.failure(Exception(session.failStackTrace)))
+                    deferred.complete(Result.failure(Exception(session.getFailStackTrace())))
                 }
             },
             { log ->
-                Log.d("VFconv", log.message)
+                Log.d("VFconv", log.getMessage())
             },
             { statistics ->
-                val seconds = statistics.time / 1_000_000
+                val seconds = statistics.getTime() / 1_000_000
                 _progress.value = (seconds % 100).toInt()
             }
         )

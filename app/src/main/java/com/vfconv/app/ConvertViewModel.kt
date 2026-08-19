@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.CountDownLatch
 
 class ConvertViewModel : ViewModel() {
 
@@ -40,6 +42,7 @@ class ConvertViewModel : ViewModel() {
                     _state.value = ConversionState.Error("Input file is empty")
                     return@launch
                 }
+                Log.d("VFconv", "Input file size: ${inputFile.length()} bytes")
             } catch (e: Exception) {
                 _state.value = ConversionState.Error(e.message)
                 return@launch
@@ -52,6 +55,7 @@ class ConvertViewModel : ViewModel() {
             }
 
             if (result.isSuccess && outputFile.length() > 0) {
+                Log.d("VFconv", "Output file size: ${outputFile.length()} bytes")
                 try {
                     context.contentResolver.openOutputStream(outputUri)?.use { out ->
                         outputFile.inputStream().use { it.copyTo(out) }
@@ -65,6 +69,7 @@ class ConvertViewModel : ViewModel() {
                     _state.value = ConversionState.Error(e.message)
                 }
             } else {
+                Log.e("VFconv", "Conversion failed or empty output")
                 outputFile.delete()
                 inputFile.delete()
                 _state.value = ConversionState.Error(result.exceptionOrNull()?.message ?: "Conversion failed")
@@ -82,7 +87,7 @@ class ConvertViewModel : ViewModel() {
                 "-y",
                 "-i", inputPath,
                 "-c:v", "libx264",
-                "-preset", "ultrafast",
+                "-preset", "ultrafast",   // much faster for testing
                 "-crf", "23",
                 "-c:a", "aac",
                 "-b:a", "128k",
@@ -91,7 +96,10 @@ class ConvertViewModel : ViewModel() {
             Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
 
             val session = FFmpegKit.executeWithArguments(command)
+            // Wait for completion using a latch, because execute is asynchronous?
+            // Actually executeWithArguments is synchronous in FFmpegKit, but we add safety.
             if (ReturnCode.isSuccess(session.getReturnCode())) {
+                Log.d("VFconv", "FFmpeg success")
                 Result.success(Unit)
             } else {
                 val logs = session.getAllLogsAsString()

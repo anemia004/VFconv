@@ -16,7 +16,8 @@ class LiquidBottomTabsView @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs) {
 
-    interface OnTabSelectedListener {
+    // Make it a fun interface to allow lambda usage
+    fun interface OnTabSelectedListener {
         fun onTabSelected(index: Int)
     }
 

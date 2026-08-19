@@ -49,6 +49,28 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
 
-    // FFmpegKitNext AAR (local)
+    // FFmpegKitNext AAR (local, will be auto-downloaded if missing)
     implementation files('libs/ffmpeg-kit-next-android-gpl.aar')
 }
+
+// ---- AUTO-DOWNLOAD AAR TASK ----
+task downloadAar {
+    doLast {
+        def aarFile = file('libs/ffmpeg-kit-next-android-gpl.aar')
+        if (!aarFile.exists()) {
+            mkdir 'libs'
+            new URL('https://github.com/anemia004/ffmpeg-kit-next/releases/download/v8.1.1/ffmpeg-kit-next-android-gpl.aar')
+                .withInputStream { input ->
+                    aarFile.withOutputStream { output ->
+                        output << input
+                    }
+                }
+            println "FFmpeg AAR downloaded successfully."
+        } else {
+            println "FFmpeg AAR already exists. Skipping download."
+        }
+    }
+}
+
+// Make every build (sync, assemble, run) download the AAR first if missing
+preBuild.dependsOn downloadAar

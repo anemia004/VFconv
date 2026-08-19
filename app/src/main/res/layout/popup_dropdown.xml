@@ -1,8 +1,0 @@
-<ListView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/dropdown_list"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/glass_dropdown_popup"
-    android:divider="@android:color/transparent"
-    android:dividerHeight="0dp"
-    android:padding="4dp" />

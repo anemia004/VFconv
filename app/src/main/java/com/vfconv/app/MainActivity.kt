@@ -43,11 +43,12 @@ class MainActivity : AppCompatActivity() {
         setupDropdowns()
         setupClickListeners()
         observeViewModel()
+        updateOutputFolderLabel()
     }
 
     private fun setupDropdowns() {
         binding.dropdownFormat.setOptions(listOf("MP4", "MKV", "WebM"))
-        binding.dropdownCodec.setOptions(listOf("H.264", "H.265", "VP9", "AV1"))
+        binding.dropdownCodec.setOptions(listOf("Copy (Fastest)", "H.264", "H.265", "VP9"))
         binding.dropdownResolution.setOptions(listOf("Original", "1080p", "720p", "480p", "360p"))
         binding.dropdownBitrate.setOptions(listOf("Default", "1 Mbps", "2 Mbps", "4 Mbps", "8 Mbps"))
     }
@@ -57,7 +58,8 @@ class MainActivity : AppCompatActivity() {
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
         binding.btnConvert.setOnClickListener {
-            if (inputUri == null) {
+            val currentInput = inputUri
+            if (currentInput == null) {
                 Toast.makeText(this, "Select a video first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -65,14 +67,11 @@ class MainActivity : AppCompatActivity() {
             val folderUriString = prefs.getString("output_folder_uri", null)
             if (folderUriString != null) {
                 val folderUri = Uri.parse(folderUriString)
-                saveOutputToFolder(folderUri)
+                saveOutputToFolder(folderUri, currentInput)
             } else {
-                val extension = when (binding.dropdownFormat.getSelected()) {
-                    "MKV" -> "mkv"
-                    "WebM" -> "webm"
-                    else -> "mp4"
-                }
-                createOutputLauncher.launch("converted_video.$extension")
+                val extension = getExtensionFromFormat()
+                val suggestedName = getOutputFileName(currentInput, extension)
+                createOutputLauncher.launch(suggestedName)
             }
         }
         binding.btnCancel.setOnClickListener { viewModel.cancel() }
@@ -99,11 +98,13 @@ class MainActivity : AppCompatActivity() {
                     is ConversionState.Success -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
+                        binding.progressCard.visibility = android.view.View.GONE
                         Toast.makeText(this@MainActivity, "Conversion completed!", Toast.LENGTH_LONG).show()
                     }
                     is ConversionState.Error -> {
                         binding.btnConvert.isEnabled = true
                         binding.btnCancel.isEnabled = false
+                        binding.progressCard.visibility = android.view.View.GONE
                         Toast.makeText(this@MainActivity, "Conversion failed: ${state.message}", Toast.LENGTH_LONG).show()
                     }
                     else -> {}
@@ -112,14 +113,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveOutputToFolder(folderUri: Uri) {
-        val inputUri = inputUri ?: return
-        val extension = when (binding.dropdownFormat.getSelected()) {
-            "MKV" -> "mkv"
-            "WebM" -> "webm"
-            else -> "mp4"
-        }
-        val fileName = "VFconv_${System.currentTimeMillis()}.$extension"
+    private fun saveOutputToFolder(folderUri: Uri, inputUri: Uri) {
+        val extension = getExtensionFromFormat()
+        val fileName = getOutputFileName(inputUri, extension)
         val outputUri = createFileInFolder(folderUri, fileName)
         if (outputUri != null) {
             startConversion(outputUri)
@@ -136,14 +132,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startConversion(outputUri: Uri) {
-        val inputUri = inputUri ?: return
+        val currentInput = inputUri ?: return
         val options = ConvertOptions(
             codec = getCodecValue(),
             resolution = getResolutionValue(),
             bitrate = getBitrateValue(),
             outputFormat = getExtensionFromFormat()
         )
-        viewModel.startConversion(this, inputUri, outputUri, options)
+        viewModel.startConversion(this, currentInput, outputUri, options)
     }
 
     private fun getExtensionFromFormat(): String {
@@ -154,11 +150,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getOutputFileName(inputUri: Uri, extension: String): String {
+        val originalName = inputUri.lastPathSegment ?: "video"
+        val baseName = originalName.substringBeforeLast('.', originalName)
+        return "${baseName}_VF.$extension"
+    }
+
     private fun getCodecValue(): String {
         return when (binding.dropdownCodec.getSelected()) {
+            "Copy (Fastest)" -> "copy"
             "H.265" -> "libx265"
             "VP9" -> "libvpx-vp9"
-            "AV1" -> "libaom-av1"
             else -> "libx264"
         }
     }
@@ -183,5 +185,20 @@ class MainActivity : AppCompatActivity() {
             "8 Mbps" -> "8M"
             else -> null
         }
+    }
+
+    private fun updateOutputFolderLabel() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val folderUriString = prefs.getString("output_folder_uri", null)
+        if (folderUriString != null) {
+            binding.tvOutput.text = "Output: Custom folder set"
+        } else {
+            binding.tvOutput.text = "Output: Ask each time"
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateOutputFolderLabel()
     }
 }

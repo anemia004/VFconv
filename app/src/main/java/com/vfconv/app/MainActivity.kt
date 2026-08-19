@@ -41,17 +41,36 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupDropdowns()
+        setupTabs()
         setupClickListeners()
         observeViewModel()
         updateOutputFolderLabel()
     }
 
     private fun setupDropdowns() {
-        binding.dropdownFormat.setOptions(listOf("MP4", "MKV", "WebM"))
         binding.dropdownCodec.setOptions(listOf("Copy (Fastest)", "H.264", "H.265", "VP9"))
         binding.dropdownResolution.setOptions(listOf("Original", "1080p", "720p", "480p", "360p"))
         binding.dropdownBitrate.setOptions(listOf("Default", "1 Mbps", "2 Mbps", "4 Mbps", "8 Mbps"))
     }
+
+    private fun setupTabs() {
+        binding.tabFormat.setTabs(listOf("MP4", "MKV", "WebM"))
+        binding.tabFormat.setOnTabSelectedListener { index ->
+            val format = when (index) {
+                0 -> "MP4"
+                1 -> "MKV"
+                2 -> "WebM"
+                else -> "MP4"
+            }
+            // Store the selected format in a variable or use it directly in getExtensionFromFormat()
+            selectedFormat = format
+        }
+        // Initialize selected format
+        selectedFormat = "MP4"
+    }
+
+    // Add a private variable to hold the selected format
+    private var selectedFormat: String = "MP4"
 
     private fun setupClickListeners() {
         binding.btnPickVideo.setOnClickListener {
@@ -143,7 +162,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getExtensionFromFormat(): String {
-        return when (binding.dropdownFormat.getSelected()) {
+        return when (selectedFormat) {
             "MKV" -> "mkv"
             "WebM" -> "webm"
             else -> "mp4"

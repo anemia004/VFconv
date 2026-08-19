@@ -1,0 +1,5 @@
+<resources>
+    <declare-styleable name="LiquidGlassButton">
+        <attr name="label" format="string" />
+    </declare-styleable>
+</resources>

@@ -13,7 +13,6 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Top row with title and settings button -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -62,7 +61,6 @@
             android:textColor="#E6FFFFFF"
             android:textSize="13sp" />
 
-        <!-- Glass card for settings -->
         <androidx.cardview.widget.CardView
             android:id="@+id/settingsCard"
             android:layout_width="match_parent"
@@ -135,13 +133,17 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <com.vfconv.app.LiquidGlassButton
+        <Button
             android:id="@+id/btnConvert"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:enabled="false"
-            app:label="Convert" />
+            android:text="Convert"
+            android:background="@drawable/glass_button_primary"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:paddingVertical="14dp"
+            android:enabled="false" />
 
         <LinearLayout
             android:id="@+id/progressCard"
@@ -172,13 +174,15 @@
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <com.vfconv.app.LiquidGlassButton
+        <Button
             android:id="@+id/btnCancel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:enabled="false"
-            app:label="Cancel" />
+            android:text="Cancel"
+            android:background="@drawable/glass_button"
+            android:textColor="#FFFFFF"
+            android:enabled="false" />
 
         <TextView
             android:id="@+id/tvOutput"

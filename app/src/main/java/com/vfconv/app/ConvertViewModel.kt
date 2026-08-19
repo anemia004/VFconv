@@ -1,6 +1,7 @@
 package com.vfconv.app
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.CountDownLatch
 
 class ConvertViewModel : ViewModel() {
 
@@ -23,10 +25,13 @@ class ConvertViewModel : ViewModel() {
     private val _state = MutableStateFlow<ConversionState>(ConversionState.Idle)
     val state: StateFlow<ConversionState> = _state
 
+    private var currentSession: FFmpegSession? = null
+
     fun startConversion(context: Context, inputUri: Uri, outputUri: Uri, options: ConvertOptions) {
         viewModelScope.launch {
             _state.value = ConversionState.Running
             _progress.value = 0
+            currentSession = null
 
             // Copy input to cache
             val inputFile = File(context.cacheDir, "input_${System.currentTimeMillis()}.mp4")
@@ -47,10 +52,11 @@ class ConvertViewModel : ViewModel() {
                 return@launch
             }
 
+            val durationMs = getVideoDurationMs(inputFile.absolutePath)
             val outputFile = File(context.cacheDir, "output_${System.currentTimeMillis()}.mp4")
 
             val result = withContext(Dispatchers.IO) {
-                runFFmpeg(inputFile.absolutePath, outputFile.absolutePath, options)
+                runFFmpegAsync(inputFile.absolutePath, outputFile.absolutePath, options, durationMs)
             }
 
             if (result.isSuccess && outputFile.length() > 0) {
@@ -82,55 +88,102 @@ class ConvertViewModel : ViewModel() {
     }
 
     fun cancel() {
+        currentSession?.cancel()
         FFmpegKit.cancel()
     }
 
-    private suspend fun runFFmpeg(
+    private suspend fun runFFmpegAsync(
         inputPath: String,
         outputPath: String,
-        options: ConvertOptions
+        options: ConvertOptions,
+        durationMs: Long
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        // Build command with optional parameters
-        val command = mutableListOf(
-            "-y",
-            "-i", inputPath,
-            "-c:v", options.codec,
-            "-preset", options.preset,
-            "-crf", options.crf.toString()
-        )
+        val command = mutableListOf<String>()
 
-        // Add resolution scale if specified
-        options.resolution?.let { res ->
-            command.addAll(listOf("-vf", "scale=$res"))
+        if (options.codec == "copy") {
+            // Fastest: copy streams without re-encoding
+            command.addAll(listOf(
+                "-y",
+                "-i", inputPath,
+                "-c:v", "copy",
+                "-c:a", "copy",
+                outputPath
+            ))
+        } else {
+            command.addAll(listOf(
+                "-y",
+                "-err_detect", "ignore_err",
+                "-fflags", "+genpts+discardcorrupt",
+                "-i", inputPath,
+                "-c:v", options.codec,
+                "-preset", "ultrafast",   // force ultrafast for speed
+                "-crf", options.crf.toString(),
+                "-threads", "0"            // use all CPU cores
+            ))
+
+            // Add speed tweaks for H.264
+            if (options.codec == "libx264") {
+                command.addAll(listOf("-tune", "zerolatency"))
+            }
+
+            options.resolution?.let { res -> command.addAll(listOf("-vf", "scale=$res")) }
+            options.bitrate?.let { bitrate -> command.addAll(listOf("-b:v", bitrate)) }
+
+            // VP9 realtime settings for faster encoding
+            if (options.codec == "libvpx-vp9") {
+                command.addAll(listOf("-deadline", "realtime", "-cpu-used", "8"))
+            }
+
+            command.addAll(listOf("-c:a", "aac", "-b:a", "128k"))
+            command.add(outputPath)
         }
-
-        // Add bitrate if specified
-        options.bitrate?.let { bitrate ->
-            command.addAll(listOf("-b:v", bitrate))
-        }
-
-        // Always add audio codec
-        command.addAll(listOf("-c:a", "aac", "-b:a", "128k"))
-        command.add(outputPath)
 
         Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
 
+        val latch = CountDownLatch(1)
+        var success = false
+        var errorMessage: String? = null
+
         try {
-            val session = FFmpegKit.executeWithArguments(command.toTypedArray())
-            if (ReturnCode.isSuccess(session.getReturnCode())) {
-                Log.d("VFconv", "FFmpeg success")
-                Result.success(Unit)
-            } else {
-                val logs = session.getAllLogsAsString()
-                Log.e("VFconv", "FFmpeg failed: $logs")
-                Result.failure(Exception(logs))
-            }
-        } catch (e: UnsatisfiedLinkError) {
-            Log.e("VFconv", "Native library missing (UnsatisfiedLinkError)", e)
-            Result.failure(e)
+            val session = FFmpegKit.executeAsync(
+                command.toTypedArray(),
+                { completedSession ->
+                    success = ReturnCode.isSuccess(completedSession.returnCode)
+                    if (!success) {
+                        errorMessage = completedSession.allLogsAsString
+                    }
+                    latch.countDown()
+                },
+                { log -> /* optional log callback */ },
+                { statistics ->
+                    if (durationMs > 0) {
+                        val percent = ((statistics.time.toDouble() / durationMs) * 100)
+                            .toInt().coerceIn(0, 100)
+                        _progress.value = percent
+                    }
+                }
+            )
+            currentSession = session
+            latch.await()
         } catch (e: Exception) {
-            Log.e("VFconv", "FFmpeg execution error", e)
-            Result.failure(e)
+            errorMessage = e.message
+            latch.countDown()
+        }
+
+        if (success) Result.success(Unit)
+        else Result.failure(Exception(errorMessage ?: "Conversion failed"))
+    }
+
+    private fun getVideoDurationMs(path: String): Long {
+        return try {
+            val retriever = MediaMetadataRetriever()
+            retriever.setDataSource(path)
+            val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+            retriever.release()
+            duration?.toLongOrNull() ?: 0L
+        } catch (e: Exception) {
+            Log.e("VFconv", "Failed to get duration", e)
+            0L
         }
     }
 }

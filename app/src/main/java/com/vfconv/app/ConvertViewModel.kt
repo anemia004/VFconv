@@ -109,37 +109,42 @@ class ConvertViewModel : ViewModel() {
                 outputPath
             ))
         } else {
+            val isHardware = options.codec.contains("mediacodec")
+
             command.addAll(listOf(
                 "-y",
                 "-err_detect", "ignore_err",
                 "-fflags", "+genpts+discardcorrupt",
-                "-i", inputPath,
-                "-c:v", options.codec,
-                "-preset", "ultrafast",
-                "-crf", options.crf.toString(),
-                "-threads", "0"
+                "-i", inputPath
             ))
 
-            if (options.codec == "libx264") {
-                command.addAll(listOf("-tune", "zerolatency"))
+            if (isHardware) {
+                // Hardware encoder: use bitrate instead of CRF/preset
+                val bitrate = options.bitrate ?: "2M"
+                command.addAll(listOf("-c:v", options.codec, "-b:v", bitrate))
+            } else {
+                command.addAll(listOf(
+                    "-c:v", options.codec,
+                    "-preset", "ultrafast",
+                    "-crf", options.crf.toString(),
+                    "-threads", "0"
+                ))
+
+                if (options.codec == "libx264") {
+                    command.addAll(listOf("-tune", "zerolatency"))
+                }
+
+                if (options.codec == "libvpx-vp9") {
+                    command.addAll(listOf("-deadline", "realtime", "-cpu-used", "8"))
+                }
             }
 
             options.resolution?.let { res -> command.addAll(listOf("-vf", "scale=$res")) }
-            options.bitrate?.let { bitrate -> command.addAll(listOf("-b:v", bitrate)) }
-
-            if (options.codec == "libvpx-vp9") {
-                command.addAll(listOf("-deadline", "realtime", "-cpu-used", "8"))
-            }
-
             command.addAll(listOf("-c:a", "aac", "-b:a", "128k"))
             command.add(outputPath)
         }
 
-        // Build command string with quotes for paths
-        val commandString = command.joinToString(" ") { arg ->
-            if (arg.startsWith("/") || arg.contains(" ")) "\"$arg\"" else arg
-        }
-        Log.d("VFconv", "Executing: $commandString")
+        Log.d("VFconv", "Executing: ${command.joinToString(" ")}")
 
         val latch = CountDownLatch(1)
         var success = false
@@ -147,7 +152,9 @@ class ConvertViewModel : ViewModel() {
 
         try {
             val session = FFmpegKit.executeAsync(
-                commandString,
+                command.joinToString(" ") { arg ->
+                    if (arg.startsWith("/") || arg.contains(" ")) "\"$arg\"" else arg
+                },
                 { completedSession ->
                     success = ReturnCode.isSuccess(completedSession.getReturnCode())
                     if (!success) {

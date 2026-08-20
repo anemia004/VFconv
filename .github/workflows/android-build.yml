@@ -22,12 +22,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Download prebuilt AAR from your release repo
-      - name: Download FFmpegKitNext AAR
+      # Download prebuilt AAR (MediaCodec enabled) from your release repo
+      - name: Download FFmpegKitNext AAR (MediaCodec)
         run: |
           mkdir -p app/libs
-          curl -L -o app/libs/ffmpeg-kit-next-android-gpl-8.1.1.aar \
-            "https://github.com/anemia004/ffmpeg-kit-next/releases/download/v8.1.1/ffmpeg-kit-next-android-gpl.aar"
+          curl -L -o app/libs/ffmpeg-kit-next-android-gpl-mediacodec.aar \
+            "https://github.com/anemia004/ffmpeg-kit-next/releases/download/v8.1.1-mediacodec/ffmpeg-kit-next-android-gpl-mediacodec.aar"
 
       - name: Cache Gradle packages
         uses: actions/cache@v4

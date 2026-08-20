@@ -1,26 +1,23 @@
 # VFconv
 
-**VFconv** is an Android video converter app built with **FFmpegKitNext** and simple Android UI.
-
-**IMPORTANT:** This project is intended **solely for personal, testing, and hobby purposes**.  
-
+VFconv is an Android video converter app built with FFmpegKitNext.
 
 ## Features
 
-- **Select video** from device storage (no storage permission required – uses Storage Access Framework)
-- **Choose output format** (MP4, MKV, WebM) with a liquid‑glass tab bar
-- **Select codec**:
+- Select video from device storage (no storage permission required – uses Storage Access Framework)
+- Choose output format (MP4, MKV, WebM) with a liquid‑glass tab bar
+- Select codec:
   - Copy (Fastest) – remux without re‑encoding
   - H.264 (CPU / hardware)
   - H.265 (CPU / hardware)
   - VP9 (CPU)
-- **Resolution** scaling (Original, 1080p, 720p, 480p, 360p)
-- **Bitrate** selection
-- **Hardware acceleration toggle** (MediaCodec on/off)
-- **Progress bar** with live conversion progress
-- **Cancel** conversion
-- **Custom output folder** via settings
-- **Glassy UI** with moving background and liquid‑glass components
+- Resolution scaling (Original, 1080p, 720p, 480p, 360p)
+- Bitrate selection
+- Hardware acceleration toggle (MediaCodec on/off)
+- Progress bar with live conversion progress
+- Cancel conversion
+- Custom output folder via settings
+- Glassy UI with moving background and liquid‑glass components
 
 ## Build
 
@@ -30,40 +27,33 @@
 - Android SDK (API 35)
 
 ### Dependencies
-- FFmpegKitNext AAR (MediaCodec enabled) – see [FFmpegKitNext release](https://github.com/anemia004/ffmpeg-kit-next/releases)
-- `smart-exception-java` for FFmpegKitNext
+- FFmpegKitNext (MediaCodec enabled)
+- smart-exception-java for FFmpegKitNext
 
 ### Build steps
 1. Clone this repository.
-2. Place the FFmpegKitNext AAR in `app/libs/` (or let Gradle auto‑download it).
+2. Place the FFmpegKitNext AAR in `app/libs/` or let Gradle auto‑download it.
 3. Run `gradle assembleRelease` (or use the provided GitHub Actions workflow).
 
-## Usage
+## Third-Party Components
 
-1. Launch the app.
-2. Tap **Select Video**.
-3. Choose output format (MP4, MKV, WebM) from the pill tab bar.
-4. Choose codec, resolution, and bitrate.
-5. Optionally enable hardware acceleration in **Settings**.
-6. Tap **Convert**.
-7. If no output folder is set, choose where to save; otherwise the file is saved to the preset folder.
+This app uses **FFmpegKitNext**, whose source is available at:  
+[https://github.com/arthenica/ffmpeg-kit-next](https://github.com/arthenica/ffmpeg-kit-next)
+
+FFmpegKitNext is licensed under GPL v3.0.
 
 ## License
 
 This project is licensed under the **GNU General Public License v3.0 (GPL v3.0)**.  
 You may obtain a copy of the license at [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
-### Third‑Party Licenses
-- **FFmpegKitNext** – GPL v3.0 (with x264, x265)
-- **smart‑exception‑java** – Apache 2.0
-- **AndroidX libraries** – Apache 2.0
+## Patent Notice
 
-## Important Notice
+This project includes video codecs (x264, x265) that may be covered by patents in certain countries.  
+Commercial use of these codecs may require separate patent licenses from the respective patent holders.  
+OpenH264 is not included.
 
-Some codecs (`x264`, `x265`) may be subject to software patents in certain countries.  
-- **OpenH264 is not included**, so no MPEG LA licensing fees apply.
-
-**You are solely responsible for determining the appropriateness of using or redistributing this software and assume any risks associated with your exercise of permissions under this license.** Consult a legal professional if you distribute globally.
+**You are solely responsible for determining whether your use requires patent licenses or royalties, and for obtaining any necessary licenses.** Consult a qualified legal professional if you distribute globally.
 
 ## Disclaimer
 

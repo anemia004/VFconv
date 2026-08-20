@@ -3,8 +3,7 @@
 **VFconv** is an Android video converter app built with **FFmpegKitNext** and simple Android UI.
 
 **IMPORTANT:** This project is intended **solely for personal, testing, and hobby purposes**.  
-**Commercial use and redistribution of this software or any derivative works are strictly prohibited by the repository owner.**  
-By using this app, you agree to these restrictions.
+
 
 ## Features
 

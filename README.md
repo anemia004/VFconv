@@ -53,7 +53,7 @@ You may obtain a copy of the license at [https://www.gnu.org/licenses/gpl-3.0.ht
 If you are planning to clone or use this project, please be aware that:
 This project includes video codecs (x264, x265) that may be covered by patents in certain countries.  
 Commercial use of these codecs may require separate patent licenses from the respective patent holders.  
-OpenH264 is not included.
+
 
 **You are solely responsible for determining whether your use requires patent licenses or royalties, and for obtaining any necessary licenses.** Consult a qualified legal professional if you distribute globally.
 

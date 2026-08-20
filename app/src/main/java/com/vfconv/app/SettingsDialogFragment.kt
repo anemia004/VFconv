@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.DialogFragment
@@ -47,6 +48,19 @@ class SettingsDialogFragment : DialogFragment() {
 
         view.findViewById<View>(R.id.btn_choose_folder).setOnClickListener {
             chooseFolderLauncher.launch(null)
+        }
+
+        val switchHardware = view.findViewById<Switch>(R.id.switch_hardware)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        switchHardware.isChecked = prefs.getBoolean("use_hardware", false)
+
+        switchHardware.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("use_hardware", isChecked).apply()
+            Toast.makeText(
+                context,
+                if (isChecked) "Hardware acceleration enabled" else "Hardware acceleration disabled",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         view.findViewById<View>(R.id.btn_about).setOnClickListener {

@@ -49,6 +49,8 @@ You may obtain a copy of the license at [https://www.gnu.org/licenses/gpl-3.0.ht
 
 ## Patent Notice
 
+**This is a test project intended for personal and hobby use only.**  
+If you are planning to clone or use this project, please be aware that:
 This project includes video codecs (x264, x265) that may be covered by patents in certain countries.  
 Commercial use of these codecs may require separate patent licenses from the respective patent holders.  
 OpenH264 is not included.

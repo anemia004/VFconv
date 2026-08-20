@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModel = ConvertViewModel()
 
     private var inputUri: Uri? = null
+    private var selectedFormat: String = "MP4"
 
     private val pickVideoLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -56,21 +57,15 @@ class MainActivity : AppCompatActivity() {
     private fun setupTabs() {
         binding.tabFormat.setTabs(listOf("MP4", "MKV", "WebM"))
         binding.tabFormat.setOnTabSelectedListener { index ->
-            val format = when (index) {
+            selectedFormat = when (index) {
                 0 -> "MP4"
                 1 -> "MKV"
                 2 -> "WebM"
                 else -> "MP4"
             }
-            // Store the selected format in a variable or use it directly in getExtensionFromFormat()
-            selectedFormat = format
         }
-        // Initialize selected format
         selectedFormat = "MP4"
     }
-
-    // Add a private variable to hold the selected format
-    private var selectedFormat: String = "MP4"
 
     private fun setupClickListeners() {
         binding.btnPickVideo.setOnClickListener {
@@ -176,9 +171,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCodecValue(): String {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val useHardware = prefs.getBoolean("use_hardware", false)
+
         return when (binding.dropdownCodec.getSelected()) {
             "Copy (Fastest)" -> "copy"
-            "H.265" -> "libx265"
+            "H.264" -> if (useHardware) "h264_mediacodec" else "libx264"
+            "H.265" -> if (useHardware) "hevc_mediacodec" else "libx265"
             "VP9" -> "libvpx-vp9"
             else -> "libx264"
         }
